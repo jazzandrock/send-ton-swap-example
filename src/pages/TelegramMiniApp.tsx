@@ -1,11 +1,12 @@
 'use client'
 
+import logo from '../../public/images/logo.svg';
 import { useCallback, useEffect, useState } from 'react'
 // import { Search, Table, Wallet } from 'lucide-react'
 import { TonConnectButton, useTonConnectUI, useTonWallet } from '@tonconnect/ui-react'
 import { TokenDetail } from '../components/TokenDetail'
 import { Button } from '../components/ui/button'
-import { Table, TableBody, TableCell, TableRow } from '../components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
 import { Search } from 'lucide-react'
 import WebApp from '@twa-dev/sdk'
 
@@ -17,15 +18,15 @@ interface TradingPair {
     volume: number
 }
 
-const exampleTradingPairs: TradingPair[] = [
-    { id: "1", name: "DOGS", icon: "/placeholder.svg?height=24&width=24", marketCap: 340000000, volume: 217000000 },
-    { id: "2", name: "Scale", icon: "/placeholder.svg?height=24&width=24", marketCap: 340000000, volume: 217000000 },
-    { id: "3", name: "Durev", icon: "/placeholder.svg?height=24&width=24", marketCap: 340000000, volume: 217000000 },
-    { id: "4", name: "TCAT", icon: "/placeholder.svg?height=24&width=24", marketCap: 340000000, volume: 217000000 },
-    { id: "5", name: "AIC", icon: "/placeholder.svg?height=24&width=24", marketCap: 340000000, volume: 217000000 },
-    { id: "6", name: "AMORE", icon: "/placeholder.svg?height=24&width=24", marketCap: 340000000, volume: 217000000 },
-    { id: "7", name: "Redo", icon: "/placeholder.svg?height=24&width=24", marketCap: 340000000, volume: 217000000 },
-    { id: "8", name: "Batya", icon: "/placeholder.svg?height=24&width=24", marketCap: 340000000, volume: 217000000 },
+const TradingPairs: TradingPair[] = [
+    { id: "1", name: "DOGS", icon: "../../public/images/token_logo/dogs.svg", marketCap: 340000000, volume: 217000000 },
+    { id: "2", name: "Scale", icon: "../../public/images/token_logo/scale.svg", marketCap: 340000000, volume: 217000000 },
+    { id: "3", name: "Durev", icon: "../../public/images/token_logo/durev.svg", marketCap: 340000000, volume: 217000000 },
+    { id: "4", name: "TCAT", icon: "../../public/images/token_logo/tcat.svg", marketCap: 340000000, volume: 217000000 },
+    { id: "5", name: "AIC", icon: "../../public/images/token_logo/aic.svg", marketCap: 340000000, volume: 217000000 },
+    { id: "6", name: "AMORE", icon: "../../public/images/token_logo/amore.svg", marketCap: 340000000, volume: 217000000 },
+    { id: "7", name: "Redo", icon: "../../public/images/token_logo/redo.svg", marketCap: 340000000, volume: 217000000 },
+    { id: "8", name: "Batya", icon: "../../public/images/token_logo/batya.svg", marketCap: 340000000, volume: 217000000 },
 ];
 
 function TradingPairsList({ onSelectPair }: { onSelectPair: (id: string) => void }) {
@@ -33,7 +34,7 @@ function TradingPairsList({ onSelectPair }: { onSelectPair: (id: string) => void
     const itemsPerPage = 5
     const startIndex = (page - 1) * itemsPerPage
     const endIndex = startIndex + itemsPerPage
-    const displayedPairs = exampleTradingPairs.slice(startIndex, endIndex)
+    const displayedPairs = TradingPairs.slice(startIndex, endIndex)
 
     const formatMillions = (value: number) => {
         return `$${(value / 1000000).toFixed(1)}m`
@@ -44,6 +45,13 @@ function TradingPairsList({ onSelectPair }: { onSelectPair: (id: string) => void
             {/* Trading Pairs List */}
             <div className="flex-1 overflow-auto">
                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="text-left">Pair Info</TableHead>
+                            <TableHead className="text-right">Market Cap</TableHead>
+                            <TableHead className="text-right">Volume</TableHead>
+                        </TableRow>
+                    </TableHeader>
                     <TableBody>
                         {displayedPairs.map((pair) => (
                             <TableRow
@@ -97,7 +105,7 @@ function TradingPairsList({ onSelectPair }: { onSelectPair: (id: string) => void
                 <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setPage(p => Math.min(p + 1, Math.ceil(exampleTradingPairs.length / itemsPerPage)))}
+                    onClick={() => setPage(p => Math.min(p + 1, Math.ceil(TradingPairs.length / itemsPerPage)))}
                     className="border-gray-800 hover:bg-gray-800 bg-gray-900"
                 >
                     {'>'}
@@ -156,8 +164,8 @@ export default function TelegramMiniApp() {
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-800">
                 <div className="flex items-center gap-2">
+                    <img src={logo} alt="Logo" className="w-[25px] h-[25px]" />
                     <h1 className="text-lg font-semibold">TerminalX</h1>
-                    <span className="text-xs text-gray-500">bot</span>
                 </div>
                 <div className="flex gap-2">
                     <Button size="icon" variant="ghost" className="text-blue-500 hover:bg-gray-800">
