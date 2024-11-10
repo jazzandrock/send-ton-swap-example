@@ -9,9 +9,13 @@ import { Button } from '../components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
 import { Search } from 'lucide-react'
 import WebApp from '@twa-dev/sdk'
+import { Address, beginCell, Cell, toNano, TonClient4 } from '@ton/ton'
+import { Asset, Factory, MAINNET_FACTORY_ADDR, PoolType, SwapParams, VaultNative } from '@dedust/sdk'
+import TonWeb from 'tonweb'
 
 interface TradingPair {
     id: string
+    address?: string
     name: string
     icon: string
     marketCap: number
@@ -115,7 +119,10 @@ function TradingPairsList({ onSelectPair }: { onSelectPair: (id: string) => void
     )
 }
 
+
 export default function TelegramMiniApp() {
+    // getNativeVaultAddress() // nonblocking
+
     const [selectedPairId, setSelectedPairId] = useState<string | null>(null)
     const [signedMessage, setSignedMessage] = useState<string | null>(null)
 

@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import { Button } from "./ui/button"
+import { sendSwap } from '../lib/send-swap'
+import { useTonConnectUI, useTonWallet } from '@tonconnect/ui-react'
 
-interface TokenDetail {
+export interface TokenDetail {
     id: string
+    address?: string
     name: string
     icon: string
     price: number
@@ -17,6 +20,7 @@ const TokenDetails: Record<string, TokenDetail> = {
   "1": {
       id: "1",
       name: "DOGS",
+      address: "EQCvxJy4eG8hyHBFsZ7eePxrRsUQSFE_jpptRAYBmcG_DOGS",
       icon: "../../public/images/token_logo/dogs.svg",
       price: 0.1234,
       change24h: 5.67,
@@ -36,6 +40,7 @@ const TokenDetails: Record<string, TokenDetail> = {
   },
   "3": {
       id: "3",
+      address: "EQB02DJ0cdUD4iQDRbBv4aYG3htePHBRK1tGeRtCnatescK0",
       name: "Durev",
       icon: "../../public/images/token_logo/durev.svg",
       price: 1.5678,
@@ -101,6 +106,9 @@ export function TokenDetail({ pairId, onBack }: { pairId: string, onBack: () => 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
+    const connected = useTonWallet()
+    const [tonConnectUi] = useTonConnectUI();
+
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
@@ -157,7 +165,7 @@ export function TokenDetail({ pairId, onBack }: { pairId: string, onBack: () => 
                         {formatPercentage(data.change24h)}
                     </div>
                 </div>
-                <Button className="bg-blue-500 hover:bg-blue-600">Trade</Button>
+                <Button onClick={() => sendSwap(tonConnectUi, data)} className="bg-blue-500 hover:bg-blue-600">Trade</Button>
             </div>
 
             {/* Token Stats */}
