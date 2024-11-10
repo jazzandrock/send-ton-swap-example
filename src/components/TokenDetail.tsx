@@ -84,9 +84,8 @@ export function TokenDetail({ pairId, onBack }: { pairId: string, onBack: () => 
         <div className="flex flex-col h-full">
             {/* Header */}
             <div className="flex items-center gap-4 p-4 border-b border-gray-800">
-                <Button variant="ghost" onClick={onBack} className="p-0 hover:bg-transparent">
-                    <ArrowLeft className="h-6 w-6" />
-                </Button>
+                <ArrowLeft onClick={onBack} className="h-8 w-8 cursor-pointer" />
+
                 <img src={data.icon} alt="" className="w-8 h-8 rounded-full" />
                 <h2 className="text-xl font-bold">{data.name}</h2>
             </div>
