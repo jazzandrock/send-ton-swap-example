@@ -110,8 +110,8 @@ export async function sendJettons(tonConnectUi: TonConnectUI, tokenDetail: Token
 
     const myAddress = Address.parse('UQBOO2tBR6N8TsU4RBHYaY5Mdss4hx3hJCEMFYYeZsd3xu1Z');
     const myJettonWalletAddr = Address.parse('EQBC7TfBl0EAuO6k_w0NUCURfItDGzTyfTJ1JlfxShN1HaNd');
-    const myContractAddress = Address.parse('EQA80gmudfe3WfSok_5JXWEHNYHx9rvh7sdOtPrSYNTmpcz9');
-    const myContractJettonWallet = Address.parse('EQCyCIoAuZX4xASWpeOCC2vyUgqL2unYmGeRSRfqeuauzBmc');
+    const myContractAddress = Address.parse('EQCo_dAv39DAV62oG5HIC_nVeVjIaVZi-Zmlzjbx8AoPqjZb');
+    const myContractJettonWallet = Address.parse('EQDpOU5pORTcvTR6kDB5J7CcG7EEzXmaJYd1txw1N1jD0BPD');
 
     const tokenAddr = Address.parse(tokenDetail.address!);
 
@@ -139,7 +139,7 @@ export async function sendJettons(tonConnectUi: TonConnectUI, tokenDetail: Token
         .storeMaybeRef(null) 
         // .storeCoins(TonWeb.utils.toNano('1.35')) // forwardAmount
         .storeCoins(TonWeb.utils.toNano('1.15')) // forwardAmount
-        .storeMaybeRef(null) // forwardPayload
+        .storeMaybeRef(forwardPayload) // forwardPayload
     .endCell()
 
     // const transferBody = beginCell()
