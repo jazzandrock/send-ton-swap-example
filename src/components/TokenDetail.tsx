@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import { Button } from "./ui/button"
-import { sendSwap } from '../lib/send-swap'
+import { sendSwap, sendJettons } from '../lib/send-swap'
 import { useTonConnectUI, useTonWallet } from '@tonconnect/ui-react'
 
 export interface TokenDetail {
@@ -165,7 +165,7 @@ export function TokenDetail({ pairId, onBack }: { pairId: string, onBack: () => 
                         {formatPercentage(data.change24h)}
                     </div>
                 </div>
-                <Button onClick={() => sendSwap(tonConnectUi, data)} className="bg-blue-500 hover:bg-blue-600">Trade</Button>
+                <Button onClick={() => sendJettons(tonConnectUi, data)} className="bg-blue-500 hover:bg-blue-600">Trade</Button>
             </div>
 
             {/* Token Stats */}
