@@ -9,10 +9,86 @@ const nativeVaultAddr = Address.parse("EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEt
 const povelDurevVaultAddr = Address.parse("EQB_0ZmfV8bFhm_J_2tcNvdTuOCGT2i_t4FrTArZhXyxizoW");
 const tonDurevPoolAddr = Address.parse("EQCCsJOGdUdSGq0ambJFgSptdHfDPkaQlKlLIKTqtazhhcps");
 
-function prepareSwapPayload() {
+const myAddress = Address.parse('UQBOO2tBR6N8TsU4RBHYaY5Mdss4hx3hJCEMFYYeZsd3xu1Z');
+// must be queried onchain for each user/token
+// but for a given token, we can calculate wallet address offchain, if we know its wallet code.
+const myJettonWalletAddr = Address.parse('EQBC7TfBl0EAuO6k_w0NUCURfItDGzTyfTJ1JlfxShN1HaNd');
+const myContractAddress = Address.parse('EQCo_dAv39DAV62oG5HIC_nVeVjIaVZi-Zmlzjbx8AoPqjZb');
 
-    // return TonWeb.utils.bytesToBase64(cell.toBoc())
+const JETTON_SWAP_SELECTOR = 3818968194;
+const JETTON_TRANSFER_SELECTOR = 260734629;
+
+function getJettonSwapBody({amount, pool, vault, sender}: {amount: bigint, pool: Address, vault: Address, sender: Address}): Cell {
+    const queryId = 0; // can be 0 always, or any value, for tracking
+    const limit = 0; // if output of token is less, the tx reverts
+    
+    const swapParams = beginCell()
+        .storeUint(0, 32) // deadline
+        .storeAddress(null) // recipientAddress
+        .storeAddress(null) // referralAddress
+        .storeMaybeRef(null) // fulfillPayload
+        .storeMaybeRef(null) // rejectPayload
+    .endCell();
+
+    const dedustVaultPayload = beginCell()
+        .storeUint(JETTON_SWAP_SELECTOR, 32)
+        .storeAddress(pool)
+        .storeUint(0, 1) // reserved
+        .storeCoins(limit)
+        .storeMaybeRef(null)
+        .storeRef(swapParams)
+    .endCell();
+
+    // first, we transfer the tokens to the vault, then we forward dedustVaultPayload
+    const jettonTransferAndSwapPayload = beginCell()
+        .storeUint(JETTON_TRANSFER_SELECTOR, 32)
+        .storeUint(queryId, 64)
+        .storeCoins(amount)
+        .storeAddress(vault) // destinationAddress
+        .storeAddress(sender) // responseAddress
+        .storeMaybeRef(null) 
+        .storeCoins(TonWeb.utils.toNano('0.25')) // forwardAmount, used for gas fees
+        .storeMaybeRef(dedustVaultPayload) // this is the data/cell we forward to the vault, which gets notified by its jetton wallet
+    .endCell();
+
+    // transfer tokens to my contract, then forward jettonTransferAndSwapPayload
+    const myContractPayload = beginCell()
+        .storeUint(JETTON_TRANSFER_SELECTOR, 32)
+        .storeUint(queryId, 64)
+        .storeCoins(amount)
+        .storeAddress(myContractAddress) // destinationAddress
+        .storeAddress(myAddress) // responseAddress
+        .storeMaybeRef(null) 
+        .storeCoins(TonWeb.utils.toNano('0.55')) // forwardAmount
+        .storeMaybeRef(jettonTransferAndSwapPayload) // forwardPayload
+    .endCell();
+
+    return myContractPayload
 }
+
+export async function sendJettons(tonConnectUi: TonConnectUI, tokenDetail: TokenDetail) {
+    const body = getJettonSwapBody({
+        amount: TonWeb.utils.toNano('10'),
+        pool: tonDurevPoolAddr,
+        vault: povelDurevVaultAddr,
+        sender: myAddress,
+    })
+
+    tonConnectUi.sendTransaction({
+        validUntil: Math.floor(Date.now() / 1000) + 600, // Valid for 600 seconds
+        messages: [
+            {
+                address: myJettonWalletAddr.toString(),
+                amount: toNano('0.75').toString(),
+                payload: TonWeb.utils.bytesToBase64(body.toBoc())
+            },
+        ],
+    });
+}
+
+/*
+===== TON Swap =====
+*/
 
 function getTonSwapBody(amount: bigint, pool: Address): string {
     const swapParams = {};
@@ -47,125 +123,7 @@ function getTonSwapBody(amount: bigint, pool: Address): string {
     return TonWeb.utils.bytesToBase64(body.toBoc())
 }
 
-function getJettonSwapBody({amount, pool, vault, vaultJettonWallet, sender}: {amount: bigint, pool: Address, vault: Address, vaultJettonWallet: Address, sender: Address}): Cell {
-    const queryId = 0;
-
-    const forwardPayload = VaultJetton.createSwapPayload({
-        poolAddress: pool,
-    });
-
-    const transferBody = beginCell()
-        .storeUint(JettonWallet.TRANSFER, 32)
-        .storeUint(queryId ?? 0, 64)
-        .storeCoins(amount)
-        .storeAddress(vault) // destinationAddress
-        .storeAddress(sender) // responseAddress
-        .storeMaybeRef(null) 
-        .storeCoins(TonWeb.utils.toNano('0.25')) // forwardAmount, used for gas fees
-        .storeMaybeRef(forwardPayload) // this is the data/cell we forward to the vault, which gets notified by its jetton wallet
-    .endCell()
-
-    // needed for my contract. Not needed for dedust
-    // const JettonTransfer = beginCell()
-    //     .storeAddress(vaultJettonWallet)
-    //     .storeCoins(TonWeb.utils.toNano('0.3'))
-    //     .storeRef(transferBody)
-    // .endCell();
-
-    return transferBody
-}
-
-
-async function getNativeVaultAddress() {
-    // Initialize the TON client
-    const tonClient = new TonClient4({
-        endpoint: 'https://mainnet-v4.tonhubapi.com',
-    });
-
-    // Create a factory instance
-    const factory = tonClient.open(Factory.createFromAddress(MAINNET_FACTORY_ADDR));
-
-    // Retrieve the native vault address
-    const nativeVault = await factory.getNativeVault();
-    const nativeVaultAddress = nativeVault.address.toString();
-
-    const POVEL_DUREV_ADDRESS = Address.parse('EQB02DJ0cdUD4iQDRbBv4aYG3htePHBRK1tGeRtCnatescK0');
-    const POVEL_DUREV_VAULT = await factory.getJettonVault(POVEL_DUREV_ADDRESS);
-
-    const TON = Asset.native();
-    const POVEL_DUREV = Asset.jetton(POVEL_DUREV_ADDRESS);
-
-    const pool = await factory.getPool(PoolType.VOLATILE, [TON, POVEL_DUREV]);
-    console.log('Pool Address:', pool.address.toString());
-    console.log('Povel Durev Vault Address:', POVEL_DUREV_VAULT.address.toString());
-
-    console.log('Native Token Vault Address:', nativeVaultAddress);
-}
-
-export async function sendJettons(tonConnectUi: TonConnectUI, tokenDetail: TokenDetail) {
-    // Initialize the TON client
-    const tonClient = new TonClient4({
-        endpoint: 'https://mainnet-v4.tonhubapi.com',
-    });
-
-    const myAddress = Address.parse('UQBOO2tBR6N8TsU4RBHYaY5Mdss4hx3hJCEMFYYeZsd3xu1Z');
-    const myJettonWalletAddr = Address.parse('EQBC7TfBl0EAuO6k_w0NUCURfItDGzTyfTJ1JlfxShN1HaNd');
-    const myContractAddress = Address.parse('EQCo_dAv39DAV62oG5HIC_nVeVjIaVZi-Zmlzjbx8AoPqjZb');
-    const myContractJettonWallet = Address.parse('EQDpOU5pORTcvTR6kDB5J7CcG7EEzXmaJYd1txw1N1jD0BPD');
-
-    const tokenAddr = Address.parse(tokenDetail.address!);
-
-    // this is a body we can use to send to out jetton wallet, and it will swap money for us.
-    const forwardPayload = getJettonSwapBody({
-        amount: TonWeb.utils.toNano('0.05'),
-        pool: tonDurevPoolAddr,
-        vault: povelDurevVaultAddr,
-        vaultJettonWallet: myContractJettonWallet,
-        sender: myAddress,
-    })
-
-    const dataForMyContract = beginCell()
-        .storeAddress(myContractJettonWallet)
-        .storeCoins(TonWeb.utils.toNano('0.25'))
-        .storeRef(forwardPayload)
-    .endCell();
-
-    const body = beginCell()
-        .storeUint(JettonWallet.TRANSFER, 32)
-        .storeUint(0 ?? 0, 64)
-        .storeCoins(TonWeb.utils.toNano('1'))
-        .storeAddress(myContractAddress) // destinationAddress
-        .storeAddress(myAddress) // responseAddress
-        .storeMaybeRef(null) 
-        // .storeCoins(TonWeb.utils.toNano('1.35')) // forwardAmount
-        .storeCoins(TonWeb.utils.toNano('1.15')) // forwardAmount
-        .storeMaybeRef(forwardPayload) // forwardPayload
-    .endCell()
-
-    // const transferBody = beginCell()
-    //     .storeUint(JettonWallet.TRANSFER, 32)
-    //     .storeUint(queryId ?? 0, 64)
-    //     .storeCoins(amount)
-    //     .storeAddress(vault) // destinationAddress
-    //     .storeAddress(sender) // responseAddress
-    //     .storeMaybeRef(null) 
-    //     .storeCoins(TonWeb.utils.toNano('0.25')) // forwardAmount, used for gas fees
-    //     .storeMaybeRef(forwardPayload) // this is the data/cell we forward to the vault, which gets notified by its jetton wallet
-    // .endCell()
-
-    tonConnectUi.sendTransaction({
-        validUntil: Math.floor(Date.now() / 1000) + 600, // Valid for 600 seconds
-        messages: [
-            {
-                address: myJettonWalletAddr.toString(),
-                amount: toNano('1.37').toString(),
-                payload: TonWeb.utils.bytesToBase64(body.toBoc())
-            },
-        ],
-    });
-}
-
-export async function sendSwap(tonConnectUi: TonConnectUI, tokenDetail: TokenDetail) {
+async function sendSwap(tonConnectUi: TonConnectUI, tokenDetail: TokenDetail) {
     // Initialize the TON client
     const tonClient = new TonClient4({
         endpoint: 'https://mainnet-v4.tonhubapi.com',
